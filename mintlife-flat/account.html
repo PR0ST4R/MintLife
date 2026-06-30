@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Account — MintLife</title>
+<link rel="icon" type="image/svg+xml" href="logo.svg" />
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="tool.css" />
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  .account-card{
+    max-width: 480px;
+    margin: 60px auto;
+    padding: 36px;
+    text-align: center;
+  }
+  .account-avatar{
+    width: 84px; height: 84px;
+    border-radius: 50%;
+    margin: 0 auto 18px;
+    object-fit: cover;
+  }
+  .account-avatar-fallback{
+    width: 84px; height: 84px;
+    border-radius: 50%;
+    margin: 0 auto 18px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--mint-300), var(--mint-500));
+    color: #fff; font-size: 1.8rem; font-weight: 700;
+  }
+  .account-row{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+    text-align: left;
+  }
+  .account-row .label{ font-size: 0.85rem; color: var(--text-tertiary); }
+  .account-row .value{ font-size: 0.9rem; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="./index.html" class="brand">
+      <img src="logo.svg" alt="MintLife" />
+      <span>MintLife</span>
+    </a>
+    <div class="nav-actions">
+      <button class="btn-icon" data-theme-toggle aria-label="Toggle theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+      </button>
+      <div id="navAccountSlot"></div>
+    </div>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="wrap">
+    <div id="accountContent"></div>
+  </div>
+  <footer class="footer">
+    <div class="wrap">A peaceful corner of the internet — MintLife</div>
+  </footer>
+</main>
+
+<script src="theme.js"></script>
+<script src="toast.js"></script>
+<script src="loader.js"></script>
+<script src="auth.js"></script>
+<script src="storage.js"></script>
+<script src="nav.js"></script>
+<script>
+  function initials(name){
+    return (name||"?").split(" ").map(p=>p[0]).join("").slice(0,2).toUpperCase();
+  }
+
+  function render(){
+    const el = document.getElementById("accountContent");
+    const user = Auth.getUser();
+
+    if (user && user.signedIn) {
+      el.innerHTML = `
+        <div class="card account-card">
+          ${user.picture
+            ? `<img src="${user.picture}" alt="" class="account-avatar" referrerpolicy="no-referrer" />`
+            : `<div class="account-avatar-fallback">${initials(user.name)}</div>`}
+          <h2 style="font-family:var(--font-display);margin:0 0 4px;">${user.name}</h2>
+          <p style="color:var(--text-tertiary);font-size:0.88rem;margin:0 0 18px;">${user.email}</p>
+
+          <div class="account-row">
+            <span class="label">Sign-in method</span>
+            <span class="value">Google</span>
+          </div>
+          <div class="account-row">
+            <span class="label">Theme preference</span>
+            <span class="value" id="themePrefDisplay"></span>
+          </div>
+          <div class="account-row">
+            <span class="label">Saved data</span>
+            <span class="value">Synced to this account</span>
+          </div>
+
+          <button class="btn btn-danger" id="signOutBtn" style="width:100%;margin-top:24px;">Sign out</button>
+        </div>
+      `;
+      document.getElementById("themePrefDisplay").textContent =
+        document.documentElement.getAttribute("data-theme") === "dark" ? "Dark" : "Light";
+      document.getElementById("signOutBtn").addEventListener("click", () => {
+        Auth.signOut();
+        window.location.href = "index.html";
+      });
+
+      // remember theme choice against this account whenever it's toggled here
+      document.querySelectorAll("[data-theme-toggle]").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          setTimeout(()=>{
+            Store.set("themePreference", document.documentElement.getAttribute("data-theme"));
+            const disp = document.getElementById("themePrefDisplay");
+            if (disp) disp.textContent = document.documentElement.getAttribute("data-theme")==="dark" ? "Dark":"Light";
+          }, 50);
+        });
+      });
+
+    } else if (user && user.signedIn === false) {
+      el.innerHTML = `
+        <div class="card account-card">
+          <div class="account-avatar-fallback">G</div>
+          <h2 style="font-family:var(--font-display);margin:0 0 4px;">Guest session</h2>
+          <p style="color:var(--text-tertiary);font-size:0.88rem;margin:0 0 24px;line-height:1.6;">
+            You're browsing MintLife as a guest. Nothing you create will be saved once you close this tab.
+          </p>
+          <button class="btn btn-primary" id="signInPromptBtn" style="width:100%;">Sign in with Google</button>
+        </div>
+      `;
+      document.getElementById("signInPromptBtn").addEventListener("click", Auth.openLoginModal);
+    } else {
+      el.innerHTML = `
+        <div class="card account-card">
+          <div class="account-avatar-fallback">?</div>
+          <h2 style="font-family:var(--font-display);margin:0 0 4px;">Not signed in</h2>
+          <p style="color:var(--text-tertiary);font-size:0.88rem;margin:0 0 24px;line-height:1.6;">
+            Sign in with Google to save your work, or continue as a guest to explore.
+          </p>
+          <button class="btn btn-primary" id="signInPromptBtn" style="width:100%;">Sign in with Google</button>
+        </div>
+      `;
+      document.getElementById("signInPromptBtn").addEventListener("click", Auth.openLoginModal);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", render);
+  Auth.onChange(render);
+</script>
+</body>
+</html>
