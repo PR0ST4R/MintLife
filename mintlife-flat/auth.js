@@ -19,7 +19,7 @@
    tokeninfo endpoint or a server-side library.
    =========================================================== */
 
-const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "740320665040-aac9nu2hga9gi0vtul1gskml9gcf8ivb.apps.googleusercontent.com";
 
 const Auth = (() => {
   const USER_KEY = "mintlife_user";
