@@ -129,6 +129,12 @@
 <script src="storage.js"></script>
 <script src="nav.js"></script>
 <script>
+  function updateHeroButton() {
+    const btn = document.getElementById("heroSignIn");
+    if (!btn) return;
+    btn.textContent = Auth.isSignedIn() ? "View my account" : "Sign in to save progress";
+  }
+
   document.getElementById("heroSignIn").addEventListener("click", () => {
     if (Auth.isSignedIn()) {
       window.location.href = "account.html";
@@ -136,6 +142,9 @@
       Auth.openLoginModal();
     }
   });
+
+  updateHeroButton();
+  Auth.onChange(updateHeroButton);
 </script>
 </body>
 </html>
