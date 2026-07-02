@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Leaderboard — MintLife</title>
+<link rel="icon" type="image/png" href="logo.png" />
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="tool.css" />
+<style>
+.lb-wrap{ max-width:600px; margin:0 auto; padding-bottom:70px; }
+.lb-header{ padding:30px 0 20px; text-align:center; }
+.lb-header h1{ font-family:var(--font-display);font-size:1.8rem;font-weight:700;margin-bottom:6px; }
+.lb-header p{ color:var(--text-secondary);font-size:0.88rem; }
+.lb-list{ display:flex;flex-direction:column;gap:8px; }
+.lb-row{
+  display:flex;align-items:center;gap:14px;padding:14px 18px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
+  transition:transform 0.12s,box-shadow 0.12s;
+}
+.lb-row:hover{ transform:translateY(-2px);box-shadow:var(--shadow-sm); }
+.lb-row.me{ border-color:var(--mint);background:var(--mint-soft); }
+.lb-rank{ font-family:var(--font-display);font-size:1.1rem;font-weight:700;width:32px;text-align:center;color:var(--text-tertiary); }
+.lb-rank.gold{ color:#F59E0B; }
+.lb-rank.silver{ color:#94A3B8; }
+.lb-rank.bronze{ color:#B45309; }
+.lb-avatar{ width:36px;height:36px;border-radius:50%;background:var(--mint);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.8rem;flex-shrink:0; }
+.lb-name{ flex:1; }
+.lb-name .uname{ font-weight:700;font-size:0.92rem; }
+.lb-name .dname{ font-size:0.76rem;color:var(--text-tertiary); }
+.lb-mints{ font-family:var(--font-display);font-weight:700;font-size:1rem;color:var(--mint-dark); }
+html[data-theme="dark"] .lb-mints{ color:var(--mint); }
+.lb-loading{ text-align:center;padding:40px;color:var(--text-tertiary);font-size:0.88rem; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="brand"><img src="logo.png" alt="MintLife" /><span>MintLife</span></a>
+    <div class="nav-actions">
+      <button class="btn-icon" data-theme-toggle aria-label="Toggle theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+      </button>
+      <div id="navAccountSlot"></div>
+    </div>
+  </div>
+</nav>
+<main class="page">
+  <div class="wrap lb-wrap">
+    <div class="lb-header">
+      <span class="eyebrow">Global</span>
+      <h1>Leaderboard</h1>
+      <p>Top MintLife users ranked by Mints earned</p>
+    </div>
+    <div class="lb-list" id="lbList">
+      <div class="lb-loading">Loading leaderboard...</div>
+    </div>
+  </div>
+  <footer class="footer"><div class="wrap">A peaceful corner of the internet — MintLife</div></footer>
+</main>
+<script src="supabase.js"></script>
+<script src="theme.js"></script>
+<script src="toast.js"></script>
+<script src="loader.js"></script>
+<script src="identity.js"></script>
+<script src="storage.js"></script>
+<script src="nav.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const myId = Identity.getProfile()?.id;
+  const list = document.getElementById("lbList");
+  try {
+    const tbl = await DB.from("profiles");
+    const rows = await tbl.select("username=not.is.null&order=mints.desc&limit=100");
+    if (!rows || !rows.length) { list.innerHTML = '<div class="lb-loading">No one on the leaderboard yet — be the first!</div>'; return; }
+    list.innerHTML = rows.map((r, i) => {
+      const rank = i + 1;
+      const rankClass = rank===1?"gold":rank===2?"silver":rank===3?"bronze":"";
+      const rankSymbol = rank===1?"🥇":rank===2?"🥈":rank===3?"🥉":rank;
+      const initials = (r.username||"?").slice(0,2).toUpperCase();
+      const isMe = r.id === myId;
+      return `<div class="lb-row${isMe?" me":""}">
+        <div class="lb-rank ${rankClass}">${rankSymbol}</div>
+        <div class="lb-avatar">${initials}</div>
+        <div class="lb-name">
+          <div class="uname">@${r.username}</div>
+          ${r.display_name ? `<div class="dname">${r.display_name}</div>` : ""}
+        </div>
+        <div class="lb-mints">🌿 ${r.mints||0}</div>
+      </div>`;
+    }).join("");
+  } catch(e) {
+    list.innerHTML = '<div class="lb-loading">Couldn\'t load leaderboard right now.</div>';
+    console.error(e);
+  }
+});
+</script>
+</body>
+</html>
